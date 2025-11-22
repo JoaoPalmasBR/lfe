@@ -1,6 +1,14 @@
 <?php
 // O "Cérebro" Roteador
 
+// --- LINHAS DE DEPURAÇÃO (REMOVER EM PRODUÇÃO) ---
+
+// ini_set('display_errors', 1);
+// ini_set('display_startup_errors', 1);
+// error_reporting(E_ALL);
+
+// --------------------------
+
 // 1. Carrega as configurações
 require_once 'config_front.php';
 
