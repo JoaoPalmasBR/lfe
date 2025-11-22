@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Regra 1: Se o pedido for para a pasta da API (/v1), não faça nada, deixe passar.
+    RewriteRule ^v1/ - [L,NC]
+
+    # Regra 2: Se o pedido for para um arquivo físico real (ex: imagem.jpg, style.css), deixe passar.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    
+    # Regra 3: Se o pedido for para um diretório físico real, deixe passar.
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Regra Final: Para tudo o que sobrou, redirecione para index.php
+    # O que foi digitado na URL será passado na variável $_GET['url']
+    RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+</IfModule>

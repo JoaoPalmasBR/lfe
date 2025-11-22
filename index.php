@@ -1,86 +1,62 @@
 <?php
-// --- Configurações PHP ---
-// Aqui definimos variáveis básicas para usar no HTML abaixo
-$pageTitle = "Em Breve";
-$leagueName = "Liga Tocantinense de Futebol Eletrônico";
-$leagueAcronym = "LTFE";
-$currentYear = date("Y");
-?>
+// O "Cérebro" Roteador
 
-<!DOCTYPE html>
-<html lang="pt-br">
+// 1. Carrega as configurações
+require_once 'config_front.php';
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+// 2. Captura a URL digitada (que o .htaccess enviou)
+// Se não tiver nada, assume que é a página inicial.
+$url = isset($_GET['url']) ? rtrim($_GET['url'], '/') : '';
 
-    <title><?php echo $pageTitle; ?> | <?php echo $leagueAcronym; ?></title>
+// Divide a URL em pedaços usando a barra '/'
+$urlParts = explode('/', $url);
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+// Variáveis globais que controlam onde estamos
+$estadoSlugAtual = null; // Se continuar null, estamos no site global
+$paginaParaCarregar = '';
 
-    <style>
-        /* Garante que o corpo da página ocupe pelo menos 100% da altura da tela */
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            background-color: #ffffff;
-            /* Fundo branco para combinar com o logo */
-        }
+// 3. Lógica de Roteamento Simplificada (Para V1)
+// Vamos assumir que se o primeiro pedaço da URL tiver 2 letras (ex: 'to', 'go'), é um estado.
 
-        /* * 'flex: 1' faz a tag <main> crescer para ocupar todo o espaço disponível entre o topo e o rodapé.
-         * 'display: flex' e 'align-items: center' centralizam o conteúdo verticalmente dentro do main.
-        */
-        main {
-            flex: 1;
-            display: flex;
-            align-items: center;
-        }
-    </style>
-</head>
+$primeiroPedaco = isset($urlParts[0]) && !empty($urlParts[0]) ? strtolower($urlParts[0]) : 'home';
 
-<body>
+// Verifica se o primeiro pedaço parece ser uma sigla de estado (2 letras)
+// NOTA: Num sistema real, perguntaríamos à API se esse slug é válido. Para simplificar agora, checamos o tamanho.
+if (strlen($primeiroPedaco) === 2) {
+    // --- ESTAMOS DENTRO DE UM ESTADO (Ex: lfe.esp.br/to/...) ---
+    $estadoSlugAtual = $primeiroPedaco;
 
-    <nav class="navbar navbar-light bg-white shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold text-primary" href="#">
-                <?php echo $leagueAcronym; ?>
-            </a>
-        </div>
-    </nav>
+    // A página será o segundo pedaço (ex: 'campeonatos' em /to/campeonatos)
+    // Se não tiver segundo pedaço, é a home do estado.
+    $paginaParaCarregar = isset($urlParts[1]) && !empty($urlParts[1]) ? $urlParts[1] : 'home_estado';
+} elseif ($primeiroPedaco === 'painel') {
+    // --- ÁREA DO JOGADOR (Ex: lfe.esp.br/painel) ---
+    // Por enquanto, vamos só carregar um arquivo placeholder
+    $paginaParaCarregar = 'painel_placeholder';
+} else {
+    // --- ESTAMOS NO SITE GLOBAL (Ex: lfe.esp.br/campeonatos ou apenas lfe.esp.br) ---
+    $estadoSlugAtual = null;
 
-    <main>
-        <div class="container text-center px-4 py-5">
+    if ($primeiroPedaco === 'home') {
+        $paginaParaCarregar = 'home_global'; // Sua landing page antiga
+    } else {
+        $paginaParaCarregar = $primeiroPedaco;
+    }
+}
 
-            <img src="logo-ltfe.png" alt="Logo da LTFE" width="220" class="img-fluid mb-4">
-
-            <h1 class="display-5 fw-bold mb-3 text-dark">
-                <?php echo $leagueName; ?>
-            </h1>
-
-            <p class="lead text-muted mb-5">
-                Estamos preparando o campo. A maior competição oficial de e-sports do Tocantins começa em breve.
-            </p>
-
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <a href="#" class="btn btn-primary btn-lg px-5 gap-3 fw-bold rounded-pill">
-                    Seja Notificado do Lançamento
-                </a>
-            </div>
-
-        </div>
-    </main>
-
-    <footer class="footer mt-auto py-3 bg-light text-center">
-        <div class="container">
-            <span class="text-muted small">
-                &copy; <?php echo $currentYear; ?> <?php echo $leagueName; ?>.
-            </span>
-        </div>
-    </footer>
+// Define uma constante para facilitar a verificação em outras partes do site
+define('ESTADO_ATUAL', $estadoSlugAtual); // Será 'to' ou NULL
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-</body>
+// 4. Carregar o arquivo da página correspondente
+$arquivoPagina = ROOT_PATH . '/pages/' . $paginaParaCarregar . '.php';
 
-</html>
+if (file_exists($arquivoPagina)) {
+    // Se a página existe na pasta /pages/, carrega ela.
+    require_once $arquivoPagina;
+} else {
+    // Se não existe, mostra um erro 404 básico.
+    http_response_code(404);
+    echo "<h1>Erro 404</h1><p>Página não encontrada: " . htmlspecialchars($paginaParaCarregar) . "</p>";
+    // Em produção, você carregaria require_once ROOT_PATH . '/pages/404.php';
+}
