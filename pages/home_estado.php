@@ -22,7 +22,7 @@
                 Esta é a página inicial exclusiva para a federação deste estado.
                 O roteamento funcionou perfeitamente!
             </p>
-            <a href="<?php echo BASE_URL; ?><?php echo $estadoSlugAtual; ?>/campeonatos" class="btn btn-primary btn-lg">
+            <a href="<?php echo BASE_URL; ?>/<?php echo $estadoSlugAtual; ?>/campeonatos" class="btn btn-primary btn-lg">
                 Ver Campeonatos de <?php echo strtoupper($estadoSlugAtual); ?>
             </a>
             <br><br>
