@@ -1,70 +1,64 @@
 <?php
-// O "Cérebro" Roteador
+// O "Cérebro" Roteador (Atualizado para suportar pasta /painel/)
 
 // --- LINHAS DE DEPURAÇÃO (REMOVER EM PRODUÇÃO) ---
-
-// ini_set('display_errors', 1);
-// ini_set('display_startup_errors', 1);
-// error_reporting(E_ALL);
-
-// --------------------------
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// -------------------------------------------------
 
 // 1. Carrega as configurações
 require_once 'config_front.php';
 
-// 2. Captura a URL digitada (que o .htaccess enviou)
-// Se não tiver nada, assume que é a página inicial.
+// 2. Captura a URL digitada
 $url = isset($_GET['url']) ? rtrim($_GET['url'], '/') : '';
-
-// Divide a URL em pedaços usando a barra '/'
 $urlParts = explode('/', $url);
 
-// Variáveis globais que controlam onde estamos
-$estadoSlugAtual = null; // Se continuar null, estamos no site global
-$paginaParaCarregar = '';
-
-// 3. Lógica de Roteamento Simplificada (Para V1)
-// Vamos assumir que se o primeiro pedaço da URL tiver 2 letras (ex: 'to', 'go'), é um estado.
+// Variáveis de controle
+$estadoSlugAtual = null;
+$arquivoParaCarregar = ''; // O caminho físico do arquivo que vamos incluir
 
 $primeiroPedaco = isset($urlParts[0]) && !empty($urlParts[0]) ? strtolower($urlParts[0]) : 'home';
 
-// Verifica se o primeiro pedaço parece ser uma sigla de estado (2 letras)
-// NOTA: Num sistema real, perguntaríamos à API se esse slug é válido. Para simplificar agora, checamos o tamanho.
-if (strlen($primeiroPedaco) === 2) {
-    // --- ESTAMOS DENTRO DE UM ESTADO (Ex: lfe.esp.br/to/...) ---
+// --- LÓGICA CENTRAL DE ROTEAMENTO ---
+
+if ($primeiroPedaco === 'painel') {
+    // >>> ROTA 1: ÁREA LOGADA (/painel) <<<
+    // Se a URL começa com /painel, procuramos o index.php dentro da pasta física /painel/ na raiz.
+    // Nota: No futuro, se tivermos /painel/meus-jogos, teremos que melhorar essa lógica aqui.
+    // Por enquanto, qualquer coisa que comece com /painel carrega o index do painel.
+    $arquivoParaCarregar = ROOT_PATH . '/painel/index.php';
+} elseif (strlen($primeiroPedaco) === 2) {
+    // >>> ROTA 2: ÁREA ESTADUAL (/to, /go, etc) <<<
+    // Se são 2 letras, assumimos que é um estado.
     $estadoSlugAtual = $primeiroPedaco;
-
-    // A página será o segundo pedaço (ex: 'campeonatos' em /to/campeonatos)
-    // Se não tiver segundo pedaço, é a home do estado.
-    $paginaParaCarregar = isset($urlParts[1]) && !empty($urlParts[1]) ? $urlParts[1] : 'home_estado';
-} elseif ($primeiroPedaco === 'painel') {
-    // --- ÁREA DO JOGADOR (Ex: lfe.esp.br/painel) ---
-    // Por enquanto, vamos só carregar um arquivo placeholder
-    $paginaParaCarregar = 'painel_placeholder';
+    // O segundo pedaço é a página (ex: campeonatos), se não tiver, é a home_estado.
+    $pagina = isset($urlParts[1]) && !empty($urlParts[1]) ? $urlParts[1] : 'home_estado';
+    $arquivoParaCarregar = ROOT_PATH . '/pages/' . $pagina . '.php';
 } else {
-    // --- ESTAMOS NO SITE GLOBAL (Ex: lfe.esp.br/campeonatos ou apenas lfe.esp.br) ---
+    // >>> ROTA 3: ÁREA GLOBAL (/campeonatos, /login, /cadastro ou a home raiz) <<<
     $estadoSlugAtual = null;
-
-    if ($primeiroPedaco === 'home') {
-        $paginaParaCarregar = 'home_global'; // Sua landing page antiga
-    } else {
-        $paginaParaCarregar = $primeiroPedaco;
-    }
+    // Se for a raiz (home), carrega home_global, senão carrega o nome da página.
+    $pagina = ($primeiroPedaco === 'home') ? 'home_global' : $primeiroPedaco;
+    $arquivoParaCarregar = ROOT_PATH . '/pages/' . $pagina . '.php';
 }
 
-// Define uma constante para facilitar a verificação em outras partes do site
-define('ESTADO_ATUAL', $estadoSlugAtual); // Será 'to' ou NULL
+// Define a constante para uso no resto do site
+define('ESTADO_ATUAL', $estadoSlugAtual);
 
-
-// 4. Carregar o arquivo da página correspondente
-$arquivoPagina = ROOT_PATH . '/pages/' . $paginaParaCarregar . '.php';
-
-if (file_exists($arquivoPagina)) {
-    // Se a página existe na pasta /pages/, carrega ela.
-    require_once $arquivoPagina;
+// --- 4. CARREGAMENTO FINAL DO ARQUIVO ---
+if (file_exists($arquivoParaCarregar)) {
+    // O arquivo existe, vamos carregá-lo.
+    require_once $arquivoParaCarregar;
 } else {
-    // Se não existe, mostra um erro 404 básico.
+    // O arquivo não existe. Mostra erro 404.
     http_response_code(404);
-    echo "<h1>Erro 404</h1><p>Página não encontrada: " . htmlspecialchars($paginaParaCarregar) . "</p>";
-    // Em produção, você carregaria require_once ROOT_PATH . '/pages/404.php';
+
+    // Mensagem de erro personalizada dependendo de onde estamos
+    if ($primeiroPedaco === 'painel') {
+        echo "<h1>Erro 404 (Painel)</h1><p>Arquivo principal da área logada não encontrado.</p>";
+    } else {
+        $paginaErro = isset($pagina) ? $pagina : $primeiroPedaco;
+        echo "<h1>Erro 404</h1><p>Página pública não encontrada: " . htmlspecialchars($paginaErro) . ".php</p>";
+    }
 }
