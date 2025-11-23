@@ -34,14 +34,14 @@ switch ($funcaoUsuario) {
     case 'staff':
         // Por enquanto, placeholder
         $dadosView['mensagem'] = "Bem-vindo à gestão do seu estado.";
-        $viewParaCarregar = 'gestor_dashboard_placeholder.php';
+        $viewParaCarregar = 'gestor_dashboard.php';
         break;
 
     // --- ÁREA DO SUPER ADMIN ---
     case 'super_admin':
         // Por enquanto, placeholder
         $dadosView['mensagem'] = "Bem-vindo à visão global do sistema.";
-        $viewParaCarregar = 'admin_dashboard_placeholder.php';
+        $viewParaCarregar = 'admin_dashboard.php';
         break;
 
     default:

@@ -1,5 +1,5 @@
 <?php
-// O "Cérebro" Roteador (Atualizado para suportar pasta /painel/)
+// O "Cérebro" Roteador (Versão V2 - Suporte a sub-rotas no painel)
 
 // --- LINHAS DE DEPURAÇÃO (REMOVER EM PRODUÇÃO) ---
 ini_set('display_errors', 1);
@@ -7,58 +7,67 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 // -------------------------------------------------
 
-// 1. Carrega as configurações
 require_once 'config_front.php';
 
-// 2. Captura a URL digitada
+require_once ROOT_PATH . '/includes/functions.php';
 $url = isset($_GET['url']) ? rtrim($_GET['url'], '/') : '';
 $urlParts = explode('/', $url);
 
-// Variáveis de controle
 $estadoSlugAtual = null;
-$arquivoParaCarregar = ''; // O caminho físico do arquivo que vamos incluir
+$arquivoParaCarregar = '';
+
+// Parâmetros extra que podem ser passados para a view (ex: ID do campeonato)
+$routerParams = [];
 
 $primeiroPedaco = isset($urlParts[0]) && !empty($urlParts[0]) ? strtolower($urlParts[0]) : 'home';
+$segundoPedaco = isset($urlParts[1]) && !empty($urlParts[1]) ? strtolower($urlParts[1]) : null;
+$terceiroPedaco = isset($urlParts[2]) && !empty($urlParts[2]) ? strtolower($urlParts[2]) : null;
 
-// --- LÓGICA CENTRAL DE ROTEAMENTO ---
+
+// --- LÓGICA CENTRAL DE ROTEAMENTO V2 ---
 
 if ($primeiroPedaco === 'painel') {
     // >>> ROTA 1: ÁREA LOGADA (/painel) <<<
-    // Se a URL começa com /painel, procuramos o index.php dentro da pasta física /painel/ na raiz.
-    // Nota: No futuro, se tivermos /painel/meus-jogos, teremos que melhorar essa lógica aqui.
-    // Por enquanto, qualquer coisa que comece com /painel carrega o index do painel.
-    $arquivoParaCarregar = ROOT_PATH . '/painel/index.php';
+
+    // 🔥 FIX CRÍTICO DE SEGURANÇA E ESCOPO 🔥
+    // Carrega o guardião aqui para proteger TODAS as rotas internas do painel
+    // e disponibilizar as variáveis $userTokenFront e $currentUserFront para as views.
+    require_once ROOT_PATH . '/includes/auth_guard.php';
+    if ($segundoPedaco === null) {
+        // Acessou apenas /painel -> Carrega a home do painel
+        $arquivoParaCarregar = ROOT_PATH . '/painel/index.php';
+    } elseif ($segundoPedaco === 'campeonato' && is_numeric($terceiroPedaco)) {
+        // Acessou /painel/campeonato/123 -> Carrega a visualização de detalhes
+        // Passamos o ID (terceiro pedaço) via parâmetro
+        $routerParams['id'] = $terceiroPedaco;
+        $arquivoParaCarregar = ROOT_PATH . '/painel/views/gestor_campeonato_detalhes.php';
+    } else {
+        // Rota desconhecida dentro do painel
+        $arquivoParaCarregar = '404_painel'; // Marcador para erro
+    }
 } elseif (strlen($primeiroPedaco) === 2) {
     // >>> ROTA 2: ÁREA ESTADUAL (/to, /go, etc) <<<
-    // Se são 2 letras, assumimos que é um estado.
     $estadoSlugAtual = $primeiroPedaco;
-    // O segundo pedaço é a página (ex: campeonatos), se não tiver, é a home_estado.
-    $pagina = isset($urlParts[1]) && !empty($urlParts[1]) ? $urlParts[1] : 'home_estado';
+    $pagina = ($segundoPedaco) ? $segundoPedaco : 'home_estado';
     $arquivoParaCarregar = ROOT_PATH . '/pages/' . $pagina . '.php';
 } else {
-    // >>> ROTA 3: ÁREA GLOBAL (/campeonatos, /login, /cadastro ou a home raiz) <<<
+    // >>> ROTA 3: ÁREA GLOBAL (/campeonatos, /login, etc) <<<
     $estadoSlugAtual = null;
-    // Se for a raiz (home), carrega home_global, senão carrega o nome da página.
     $pagina = ($primeiroPedaco === 'home') ? 'home_global' : $primeiroPedaco;
     $arquivoParaCarregar = ROOT_PATH . '/pages/' . $pagina . '.php';
 }
 
-// Define a constante para uso no resto do site
 define('ESTADO_ATUAL', $estadoSlugAtual);
 
-// --- 4. CARREGAMENTO FINAL DO ARQUIVO ---
-if (file_exists($arquivoParaCarregar)) {
-    // O arquivo existe, vamos carregá-lo.
+// --- 4. CARREGAMENTO FINAL ---
+if ($arquivoParaCarregar !== '404_painel' && file_exists($arquivoParaCarregar)) {
     require_once $arquivoParaCarregar;
 } else {
-    // O arquivo não existe. Mostra erro 404.
     http_response_code(404);
-
-    // Mensagem de erro personalizada dependendo de onde estamos
     if ($primeiroPedaco === 'painel') {
-        echo "<h1>Erro 404 (Painel)</h1><p>Arquivo principal da área logada não encontrado.</p>";
+        echo "<h1>Erro 404 (Painel)</h1><p>Página não encontrada dentro da área logada.</p>";
     } else {
         $paginaErro = isset($pagina) ? $pagina : $primeiroPedaco;
-        echo "<h1>Erro 404</h1><p>Página pública não encontrada: " . htmlspecialchars($paginaErro) . ".php</p>";
+        echo "<h1>Erro 404</h1><p>Página pública não encontrada: " . htmlspecialchars($paginaErro) . "</p>";
     }
 }
