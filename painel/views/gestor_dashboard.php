@@ -167,6 +167,11 @@ $listaCamp = ($apiLista['status'] === 'success') ? $apiLista['data'] : [];
             </div>
 
             <div class="col-md-8">
+                <div class="mb-3 text-end">
+                    <a href="<?php echo BASE_URL; ?>/painel/checkin" class="btn btn-dark fw-bold shadow-sm">
+                        <i class="bi bi-qr-code-scan me-2"></i> ABRIR TELA DE PORTARIA (CHECK-IN)
+                    </a>
+                </div>
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
                         <span class="text-primary"><i class="bi bi-trophy-fill me-2"></i> Meus Campeonatos</span>

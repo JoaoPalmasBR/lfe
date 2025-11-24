@@ -36,6 +36,11 @@ if ($primeiroPedaco === 'painel') {
     if ($segundoPedaco === null) {
         // Acessou apenas /painel -> Carrega a home do painel
         $arquivoParaCarregar = ROOT_PATH . '/painel/index.php';
+        // --- NOVO BLOCO PARA O CHECK-IN ---
+    } elseif ($segundoPedaco === 'checkin') {
+        // Acessou /painel/checkin
+        $arquivoParaCarregar = ROOT_PATH . '/painel/views/staff_checkin.php';
+        // ----------------------------------    
     } elseif ($segundoPedaco === 'campeonato' && is_numeric($terceiroPedaco)) {
         // Acessou /painel/campeonato/123 -> Carrega a visualização de detalhes
         // Passamos o ID (terceiro pedaço) via parâmetro
