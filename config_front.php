@@ -6,7 +6,7 @@
 // SE ESTIVER NO SERVIDOR REAL: Use 'https://lfe.esp.br'
 // define('BASE_URL', 'http://localhost:3000'); // <--- AJUSTE ESTA LINHA!
 //define('BASE_URL', 'https://lfe.joao.palmas.br'); // <--- AJUSTE ESTA LINHA!
-define('BASE_URL', 'http://lfe.esp.br'); // <--- AJUSTE ESTA LINHA!
+define('BASE_URL', 'https://lfe.esp.br'); // <--- AJUSTE ESTA LINHA!
 
 // 2. Defina a URL base da API (sem barra no final)
 // Geralmente é a BASE_URL + /v1
