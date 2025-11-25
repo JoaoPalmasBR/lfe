@@ -69,10 +69,13 @@
 
                                 <div class="mt-4 d-grid">
                                     <?php if ($inscricao['status'] === 'aguardando_pagamento'): ?>
-                                        <button class="btn btn-warning fw-bold">
-                                            <i class="bi bi-cash-coin"></i> Realizar Pagamento
+                                        <button class="btn btn-warning fw-bold btn-pagar"
+                                            data-inscricao-id="<?php echo $inscricao['inscricao_id']; ?>"
+                                            onclick="iniciarPagamentoReal(this)">
+                                            <span class="texto-btn"><i class="bi bi-cash-coin me-2"></i> PAGAR AGORA (Pix)</span>
+                                            <span class="spinner-btn d-none"><span class="spinner-border spinner-border-sm me-2"></span>Gerando Pix...</span>
                                         </button>
-                                        <small class="text-center text-muted mt-2">Pague para garantir sua vaga.</small>
+                                        <small class="text-center text-muted mt-2">Pagamento instantâneo via Pix.</small>
 
                                     <?php elseif ($inscricao['status'] === 'confirmado'): ?>
                                         <button class="btn btn-success fw-bold w-100 py-2"
@@ -114,6 +117,72 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        function getAuthToken() {
+            const name = "lfe_token=";
+            const decodedCookie = decodeURIComponent(document.cookie);
+            const ca = decodedCookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) === 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+
+        // Função chamada ao clicar no botão pagar
+        function iniciarPagamentoReal(btnElement) {
+            const inscricaoId = btnElement.getAttribute('data-inscricao-id');
+            const token = getAuthToken();
+
+            if (!token) {
+                alert("Erro de autenticação. Por favor, faça login novamente.");
+                window.location.href = '/login';
+                return;
+            }
+
+            // 1. Feedback visual (Carregando...)
+            btnElement.disabled = true;
+            btnElement.querySelector('.texto-btn').classList.add('d-none');
+            btnElement.querySelector('.spinner-btn').classList.remove('d-none');
+
+            // 2. Chama a API
+            fetch('<?php echo API_URL; ?>/jogador/pagar.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        inscricao_id: inscricaoId
+                    })
+                })
+                .then(response => response.json().then(data => ({
+                    status: response.status,
+                    body: data
+                })))
+                .then(result => {
+                    if (result.status >= 200 && result.status < 300) {
+                        // SUCESSO! Redireciona para a Abacatepay
+                        window.location.href = result.body.data.payment_url;
+                    } else {
+                        // ERRO DA API
+                        throw new Error(result.body.message || 'Erro ao gerar pagamento.');
+                    }
+                })
+                .catch(error => {
+                    // Tratamento de erro
+                    alert("Não foi possível iniciar o pagamento:\n" + error.message);
+                    // Restaura o botão
+                    btnElement.disabled = false;
+                    btnElement.querySelector('.texto-btn').classList.remove('d-none');
+                    btnElement.querySelector('.spinner-btn').classList.add('d-none');
+                });
+        }
+
         // Variável global para guardar a instância do gerador
         var qrCodeGenerator = null;
         var modalElement = document.getElementById('modalQR');

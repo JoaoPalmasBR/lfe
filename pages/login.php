@@ -42,8 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [
                     'expires' => $expiraEm,
                     'path' => '/',
-                    // 'secure' => true, // <-- DESCOMENTE ISSO QUANDO ESTIVER EM HTTPS REAL (PRODUÇÃO)
-                    'httponly' => true,
+                    // 'secure' => true, // Mantenha comentado se for localhost, descomente em produção SSL
+                    'httponly' => false, // <--- MUDAMOS PARA FALSE
                     'samesite' => 'Lax'
                 ]
             );
