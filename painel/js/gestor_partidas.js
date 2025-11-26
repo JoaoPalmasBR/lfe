@@ -256,38 +256,90 @@ function abrirModalEditarPartida(id, j1Nome, j2Nome, placar1, placar2, vencedorI
 /**
  * Ação do botão "Finalizar Partida" dentro do modal.
  */
+/**
+ * Ação do botão "Finalizar Partida" dentro do modal.
+ * (VERSÃO FINAL COM API REAL)
+ */
 function salvarPlacarPartida() {
     const partidaId = document.getElementById('editPartidaId').value;
-    const placar1 = document.getElementById('editJ1Placar').value;
-    const placar2 = document.getElementById('editJ2Placar').value;
+    // Converte para inteiro ou null se estiver vazio
+    const placar1Input = document.getElementById('editJ1Placar').value;
+    const placar2Input = document.getElementById('editJ2Placar').value;
+    
+    // Validação para BYE: se o jogador não existe, o placar pode ser nulo/vazio. Se existe, deve ser número.
+    const placar1 = currentModalPlayers.j1Id ? (placar1Input === '' ? null : parseInt(placar1Input)) : null;
+    const placar2 = currentModalPlayers.j2Id ? (placar2Input === '' ? null : parseInt(placar2Input)) : null;
 
     let vencedorInscricaoId = null;
     if (document.getElementById('radioVencedorJ1').checked) vencedorInscricaoId = currentModalPlayers.j1Id;
     else if (document.getElementById('radioVencedorJ2').checked) vencedorInscricaoId = currentModalPlayers.j2Id;
 
-    // Validação: Se não for BYE, exige placares e vencedor
+    // Validação: Se não for BYE, exige placares válidos e vencedor
     if (currentModalPlayers.j1Id && currentModalPlayers.j2Id) {
-        if (placar1 === '' || placar2 === '' || vencedorInscricaoId === null) {
-            alert("Preencha os placares e selecione quem avançou."); return;
+        // Verifica se são números válidos e não nulos
+        if (placar1 === null || isNaN(placar1) || placar2 === null || isNaN(placar2) || vencedorInscricaoId === null) {
+            alert("Por favor, preencha os dois placares com números e selecione quem avançou."); return;
         }
     } else if (vencedorInscricaoId === null) {
          // Caso de BYE, só precisa confirmar quem passa (o único que existe)
-         alert("Confirme quem avança."); return;
+         alert("É necessário confirmar quem avança (mesmo sendo W.O)."); return;
     }
 
+    // UI de carregamento
     const btn = document.getElementById('btnSalvarPlacar');
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Salvando...';
 
-    console.log("[SIMULAÇÃO API] Enviando:", { partidaId, placar1, placar2, vencedorInscricaoId });
+    // Preparar dados para API
+    const payload = {
+        partida_id: parseInt(partidaId),
+        placar1: placar1 !== null ? placar1 : 0, // API espera int, envia 0 se for WO/BYE
+        placar2: placar2 !== null ? placar2 : 0,
+        vencedor_inscricao_id: parseInt(vencedorInscricaoId)
+    };
+    
+    console.log("[API REAL] Enviando PUT:", payload);
 
-    setTimeout(() => {
-        alert("Simulação: Placar salvo! (API real no próximo passo)");
-        const modalEl = document.getElementById('modalEditarPartida');
-        const modal = bootstrap.Modal.getInstance(modalEl);
-        modal.hide();
-        btn.disabled = false; btn.innerHTML = originalText;
-        carregarPartidas(); 
-    }, 1000);
+    // Chamada real à API
+    const token = getAuthToken();
+    fetch(`${window.LFE_CONFIG.API_URL}/gestor/partida_edicao.php`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json().then(data => ({status: response.status, body: data})))
+    .then(({status, body}) => {
+        if (status >= 200 && status < 300 && body.status === 'success') {
+            // SUCESSO!
+            // Fecha o modal usando bootstrap
+            const modalEl = document.getElementById('modalEditarPartida');
+            if(typeof bootstrap !== 'undefined') {
+                 const modal = bootstrap.Modal.getInstance(modalEl);
+                 modal.hide();
+            }
+            
+            // Recarrega a lista para mostrar o resultado atualizado
+            carregarPartidas();
+            
+            // Feedback visual rápido (opcional: substituir por um toast no futuro)
+            // alert('Resultado salvo com sucesso!'); 
+
+        } else {
+            // ERRO DA API
+            throw new Error(body.message || `Erro ${status}: Falha ao salvar.`);
+        }
+    })
+    .catch(error => {
+        console.error('[ERRO SALVAR PLACAR]', error);
+        alert('Não foi possível salvar o resultado: ' + error.message);
+    })
+    .finally(() => {
+        // Restaura o botão em qualquer caso (sucesso ou erro)
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
 }
