@@ -65,179 +65,151 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao_criar_camp'])) {
 $apiLista = callAPI('GET', '/gestor/campeonatos.php', null, $userTokenFront);
 $listaCamp = ($apiLista['status'] === 'success') ? $apiLista['data'] : [];
 ?>
-<!DOCTYPE html>
-<html lang="pt-br">
+<?php
+// Arquivo: /painel/views/jogador_dashboard.php
+// View: Dashboard inicial do Jogador.
+// Variáveis: $currentUserFront, $dadosView['inscricoes']
+?>
 
-<head>
-    <meta charset="UTF-8">
-    <title>Gestão <?php echo htmlspecialchars($meuEstado['sigla']); ?> | LFE SaaS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-        .bg-gestor-primary {
-            background-color: #0d6efd;
-        }
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Meu Painel</h1>
+</div>
 
-        /* Azul padrão bootstrap */
-    </style>
-</head>
+<div class="container-fluid px-4 pb-5">
+    <div class="row g-4">
 
-<body class="bg-light">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white fw-bold py-3 text-primary">
+                    <i class="bi bi-plus-square-fill me-2"></i> Criar Novo Campeonato
+                </div>
+                <div class="card-body">
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-gestor-primary mb-4 shadow">
-        <div class="container-fluid px-4">
-            <a class="navbar-brand fw-bold" href="#">
-                <i class="bi bi-joystick me-2"></i> Painel de Gestão - <?php echo htmlspecialchars($meuEstado['nome']); ?>
-            </a>
-            <div class="d-flex text-white align-items-center">
-                <span class="me-3 small opacity-75">
-                    <?php echo htmlspecialchars($currentUserFront['nome_completo']); ?> (<?php echo htmlspecialchars($meuEstado['sigla']); ?>)
-                </span>
-                <a href="<?php echo BASE_URL; ?>/login" class="btn btn-sm btn-outline-light">Sair</a>
+                    <?php if ($erroMsg): ?>
+                        <div class="alert alert-danger small py-2 mb-3"><?php echo htmlspecialchars($erroMsg); ?></div>
+                    <?php endif; ?>
+                    <?php if ($sucessoMsg): ?>
+                        <div class="alert alert-success small py-2 mb-3"><?php echo htmlspecialchars($sucessoMsg); ?></div>
+                    <?php endif; ?>
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Nome do Evento</label>
+                            <input type="text" name="nome" class="form-control" placeholder="Ex: Copa Estadual de Inverno" required value="<?php echo htmlspecialchars($nome ?? ''); ?>">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Data e Hora de Início</label>
+                            <input type="datetime-local" name="data_inicio" class="form-control" required value="<?php echo htmlspecialchars($dataRaw ?? ''); ?>">
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">Inscrição (R$)</label>
+                                <input type="number" step="0.01" name="valor_inscricao" class="form-control" placeholder="0.00" value="<?php echo htmlspecialchars($_POST['valor_inscricao'] ?? ''); ?>">
+                                <small class="text-muted" style="font-size: 11px">Deixe 0 para gratuito.</small>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold text-muted">Limite Vagas</label>
+                                <input type="number" name="limite" class="form-control" placeholder="Pad: 64" value="<?php echo htmlspecialchars($_POST['limite'] ?? ''); ?>">
+                            </div>
+                        </div>
+
+                        <hr class="my-3 text-muted opacity-25">
+                        <p class="small text-muted fw-bold mb-2">Premiação (% do arrecadado)</p>
+                        <div class="row mb-4 g-2">
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">1º (%)</span>
+                                    <input type="number" name="premio_1" class="form-control" placeholder="100" min="1" max="100">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">2º (%)</span>
+                                    <input type="number" name="premio_2" class="form-control" placeholder="0" min="0" max="100">
+                                </div>
+                            </div>
+                            <small class="text-muted mt-1" style="font-size: 11px">O sistema calculará o valor em R$ no dia.</small>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" name="acao_criar_camp" class="btn btn-primary fw-bold">
+                                Salvar Rascunho
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
-    </nav>
 
-    <div class="container-fluid px-4 pb-5">
-        <div class="row g-4">
-
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-white fw-bold py-3 text-primary">
-                        <i class="bi bi-plus-square-fill me-2"></i> Criar Novo Campeonato
-                    </div>
-                    <div class="card-body">
-
-                        <?php if ($erroMsg): ?>
-                            <div class="alert alert-danger small py-2 mb-3"><?php echo htmlspecialchars($erroMsg); ?></div>
-                        <?php endif; ?>
-                        <?php if ($sucessoMsg): ?>
-                            <div class="alert alert-success small py-2 mb-3"><?php echo htmlspecialchars($sucessoMsg); ?></div>
-                        <?php endif; ?>
-
-                        <form method="POST">
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold text-muted">Nome do Evento</label>
-                                <input type="text" name="nome" class="form-control" placeholder="Ex: Copa Estadual de Inverno" required value="<?php echo htmlspecialchars($nome ?? ''); ?>">
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold text-muted">Data e Hora de Início</label>
-                                <input type="datetime-local" name="data_inicio" class="form-control" required value="<?php echo htmlspecialchars($dataRaw ?? ''); ?>">
-                            </div>
-
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label class="form-label small fw-bold text-muted">Inscrição (R$)</label>
-                                    <input type="number" step="0.01" name="valor_inscricao" class="form-control" placeholder="0.00" value="<?php echo htmlspecialchars($_POST['valor_inscricao'] ?? ''); ?>">
-                                    <small class="text-muted" style="font-size: 11px">Deixe 0 para gratuito.</small>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small fw-bold text-muted">Limite Vagas</label>
-                                    <input type="number" name="limite" class="form-control" placeholder="Pad: 64" value="<?php echo htmlspecialchars($_POST['limite'] ?? ''); ?>">
-                                </div>
-                            </div>
-
-                            <hr class="my-3 text-muted opacity-25">
-                            <p class="small text-muted fw-bold mb-2">Premiação (% do arrecadado)</p>
-                            <div class="row mb-4 g-2">
-                                <div class="col-6">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">1º (%)</span>
-                                        <input type="number" name="premio_1" class="form-control" placeholder="100" min="1" max="100">
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text">2º (%)</span>
-                                        <input type="number" name="premio_2" class="form-control" placeholder="0" min="0" max="100">
-                                    </div>
-                                </div>
-                                <small class="text-muted mt-1" style="font-size: 11px">O sistema calculará o valor em R$ no dia.</small>
-                            </div>
-
-                            <div class="d-grid">
-                                <button type="submit" name="acao_criar_camp" class="btn btn-primary fw-bold">
-                                    Salvar Rascunho
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+        <div class="col-md-8">
+            <div class="mb-3 text-end">
+                <a href="<?php echo BASE_URL; ?>/painel/checkin" class="btn btn-dark fw-bold shadow-sm">
+                    <i class="bi bi-qr-code-scan me-2"></i> ABRIR TELA DE PORTARIA (CHECK-IN)
+                </a>
             </div>
-
-            <div class="col-md-8">
-                <div class="mb-3 text-end">
-                    <a href="<?php echo BASE_URL; ?>/painel/checkin" class="btn btn-dark fw-bold shadow-sm">
-                        <i class="bi bi-qr-code-scan me-2"></i> ABRIR TELA DE PORTARIA (CHECK-IN)
-                    </a>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+                    <span class="text-primary"><i class="bi bi-trophy-fill me-2"></i> Meus Campeonatos</span>
+                    <span class="badge bg-primary opacity-75"><?php echo count($listaCamp); ?> total</span>
                 </div>
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
-                        <span class="text-primary"><i class="bi bi-trophy-fill me-2"></i> Meus Campeonatos</span>
-                        <span class="badge bg-primary opacity-75"><?php echo count($listaCamp); ?> total</span>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="bg-light small text-muted text-uppercase">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light small text-muted text-uppercase">
+                                <tr>
+                                    <th class="ps-4">Status</th>
+                                    <th>Nome</th>
+                                    <th>Data Início</th>
+                                    <th>Inscritos</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="border-top-0">
+                                <?php if (empty($listaCamp)): ?>
                                     <tr>
-                                        <th class="ps-4">Status</th>
-                                        <th>Nome</th>
-                                        <th>Data Início</th>
-                                        <th>Inscritos</th>
-                                        <th>Ações</th>
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            <i class="bi bi-emoji-frown fs-1 d-block mb-2"></i>
+                                            Nenhum campeonato criado ainda.
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody class="border-top-0">
-                                    <?php if (empty($listaCamp)): ?>
+                                <?php else: ?>
+                                    <?php foreach ($listaCamp as $camp): ?>
+                                        <?php
+                                        // Badges de status
+                                        $badges = [
+                                            'rascunho' => ['bg-secondary', 'Rascunho (Invisível)'],
+                                            'inscricoes_abertas' => ['bg-success', 'Inscrições Abertas'],
+                                            'checkin_aberto' => ['bg-warning text-dark', 'Check-in Aberto'],
+                                            'em_andamento' => ['bg-danger', 'Em Andamento'],
+                                            'finalizado' => ['bg-dark', 'Finalizado']
+                                        ];
+                                        $badge = $badges[$camp['status']] ?? ['bg-light text-dark', $camp['status']];
+                                        ?>
                                         <tr>
-                                            <td colspan="5" class="text-center py-5 text-muted">
-                                                <i class="bi bi-emoji-frown fs-1 d-block mb-2"></i>
-                                                Nenhum campeonato criado ainda.
+                                            <td class="ps-4">
+                                                <span class="badge <?php echo $badge[0]; ?> small"><?php echo $badge[1]; ?></span>
+                                            </td>
+                                            <td class="fw-bold"><?php echo htmlspecialchars($camp['nome']); ?></td>
+                                            <td class="small text-muted"><?php echo formatarDataHora($camp['data_inicio_prevista']); ?></td>
+                                            <td class="small">
+                                                <i class="bi bi-people-fill text-muted"></i> 0 / <?php echo $camp['limite_participantes']; ?>
+                                            </td>
+                                            <td>
+                                                <a href="<?php echo BASE_URL; ?>/painel/campeonato/<?php echo $camp['id']; ?>" class="btn btn-sm btn-outline-primary fw-bold">
+                                                    Gerenciar <i class="bi bi-arrow-right-short"></i>
+                                                </a>
                                             </td>
                                         </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($listaCamp as $camp): ?>
-                                            <?php
-                                            // Badges de status
-                                            $badges = [
-                                                'rascunho' => ['bg-secondary', 'Rascunho (Invisível)'],
-                                                'inscricoes_abertas' => ['bg-success', 'Inscrições Abertas'],
-                                                'checkin_aberto' => ['bg-warning text-dark', 'Check-in Aberto'],
-                                                'em_andamento' => ['bg-danger', 'Em Andamento'],
-                                                'finalizado' => ['bg-dark', 'Finalizado']
-                                            ];
-                                            $badge = $badges[$camp['status']] ?? ['bg-light text-dark', $camp['status']];
-                                            ?>
-                                            <tr>
-                                                <td class="ps-4">
-                                                    <span class="badge <?php echo $badge[0]; ?> small"><?php echo $badge[1]; ?></span>
-                                                </td>
-                                                <td class="fw-bold"><?php echo htmlspecialchars($camp['nome']); ?></td>
-                                                <td class="small text-muted"><?php echo formatarDataHora($camp['data_inicio_prevista']); ?></td>
-                                                <td class="small">
-                                                    <i class="bi bi-people-fill text-muted"></i> 0 / <?php echo $camp['limite_participantes']; ?>
-                                                </td>
-                                                <td>
-                                                    <a href="<?php echo BASE_URL; ?>/painel/campeonato/<?php echo $camp['id']; ?>" class="btn btn-sm btn-outline-primary fw-bold">
-                                                        Gerenciar <i class="bi bi-arrow-right-short"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
-                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-
         </div>
+
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-
-</html>
+</div>
