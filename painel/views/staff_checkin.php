@@ -1,135 +1,107 @@
 <?php
 // Arquivo: /painel/views/staff_checkin.php
-// View: Tela operacional para Staff/Gestor realizar check-in (Mobile First).
-// Variáveis disponíveis: $currentUserFront, $userTokenFront
-
-// Autorização extra: apenas gestor e staff podem ver isso
-if (!in_array($currentUserFront['funcao'], ['gestor_estadual', 'staff'])) {
-    die("Acesso negado. Apenas Staff.");
-}
-
-$msgSucesso = null;
-$msgErro = null;
-$dadosCheckin = null;
-
-// =====================================================================
-// PROCESSAR O BIP/ENVIO DO QR CODE (POST)
-// =====================================================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['qr_hash'])) {
-    $qrHash = trim($_POST['qr_hash']);
-
-    if (!empty($qrHash)) {
-        // Chama a API de Check-in
-        $apiResult = callAPI('POST', '/staff/checkin.php', ['qr_hash' => $qrHash], $userTokenFront);
-
-        if (isset($apiResult['status']) && $apiResult['status'] === 'success') {
-            // SUCESSO! Mostra os dados do jogador na tela.
-            $msgSucesso = $apiResult['data']['message'];
-            $dadosCheckin = $apiResult['data']; // Contém nome do jogador, campeonato, etc.
-        } else {
-            // ERRO (Ex: já bipado, hash inválido, outro estado)
-            $msgErro = isset($apiResult['message']) ? $apiResult['message'] : "Erro ao validar QR Code.";
-        }
-    } else {
-        $msgErro = "Por favor, leia ou digite o código do voucher.";
-    }
-}
+// View: Tela de Check-in para Staff/Gestores.
+// Variáveis disponíveis: $currentUserFront
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Portaria | LFE Eventos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check-in de Jogadores | Staff LFE</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <style>
-        body {
-            background-color: #f0f2f5;
-        }
-
-        .card-checkin {
+        /* Ajuste para o container da câmera */
+        #reader {
+            width: 100%;
             max-width: 500px;
-            margin: 20px auto;
+            margin: 0 auto;
+            background-color: #000;
         }
 
-        .success-box {
-            border-left: 5px solid #198754;
-            background-color: #d1e7dd;
-        }
-
-        /* Faz o input parecer um alvo grande para scanners */
-        .input-qr {
-            font-family: monospace;
-            font-size: 1.2rem;
-            letter-spacing: 1px;
+        /* Esconde o botão de "Stop Scanning" que a biblioteca gera automaticamente */
+        #reader button {
+            display: none;
         }
     </style>
 </head>
 
-<body>
+<body class="bg-dark text-light">
 
-    <nav class="navbar navbar-dark bg-dark shadow-sm mb-3">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="<?php echo BASE_URL; ?>/painel">
-                <i class="bi bi-chevron-left me-2"></i> Voltar
-            </a>
-            <span class="navbar-text text-white small">Operação de Portaria</span>
+    <nav class="navbar navbar-dark bg-black shadow-sm mb-4 border-bottom border-secondary">
+        <div class="container">
+            <span class="navbar-brand fw-bold">
+                <i class="bi bi-shield-check me-2 text-warning"></i> Área da Staff
+            </span>
+            <div class="d-flex text-white align-items-center small">
+                <span class="me-3 d-none d-sm-block">Op: <?php echo htmlspecialchars($currentUserFront['nome_completo']); ?></span>
+                <a href="<?php echo BASE_URL; ?>/painel" class="btn btn-sm btn-outline-light">Voltar ao Painel</a>
+            </div>
         </div>
     </nav>
 
     <div class="container">
-        <div class="card shadow border-0 card-checkin">
-            <div class="card-body p-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6">
 
-                <h4 class="fw-bold text-center mb-4"><i class="bi bi-qr-code-scan text-primary"></i> Validação de Entrada</h4>
+                <div class="card bg-secondary text-white border-0 shadow-lg mb-4">
+                    <div class="card-body text-center p-4">
+                        <h4 class="fw-bold mb-3"><i class="bi bi-qr-code-scan me-2"></i> Validador de Entrada</h4>
+                        <p class="text-light opacity-75 small mb-4">Aponte a câmera para o QR Code do jogador.</p>
 
-                <?php if ($msgErro): ?>
-                    <div class="alert alert-danger text-center shadow-sm mb-4">
-                        <i class="bi bi-x-circle-fill display-4 d-block mb-2"></i>
-                        <strong>Acesso Negado:</strong> <br> <?php echo htmlspecialchars($msgErro); ?>
-                    </div>
-                    <hr>
-                <?php endif; ?>
+                        <div id="reader" class="rounded overflow-hidden mb-3 border border-warning"></div>
+                        <div id="camera-status" class="small text-warning mb-3">Iniciando câmera...</div>
 
-                <?php if ($msgSucesso && $dadosCheckin): ?>
-                    <div class="p-4 mb-4 text-center success-box rounded shadow-sm">
-                        <i class="bi bi-check-circle-fill text-success display-1"></i>
-                        <h2 class="fw-bold text-success mt-3">ACESSO LIBERADO!</h2>
-                        <h4 class="fw-bold mt-3"><?php echo htmlspecialchars($dadosCheckin['jogador']['nome']); ?></h4>
-                        <p class="mb-1 text-muted">@<?php echo htmlspecialchars($dadosCheckin['jogador']['nickname']); ?></p>
-                        <hr>
-                        <p class="small fw-bold text-primary mb-0">
-                            <i class="bi bi-trophy-fill"></i> <?php echo htmlspecialchars($dadosCheckin['campeonato']); ?>
-                        </p>
-                        <p class="small text-muted"><?php echo formatarDataHora($dadosCheckin['horario']); ?></p>
-                    </div>
-                    <div class="d-grid mb-4">
-                        <a href="<?php echo BASE_URL; ?>/painel/checkin" class="btn btn-outline-primary fw-bold">
-                            Ler Próximo Jogador
-                        </a>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (!$msgSucesso): ?>
-                    <form method="POST" autocomplete="off">
-                        <div class="mb-3">
-                            <label for="qr_hash" class="form-label fw-bold small text-muted">Bipe ou digite o código do voucher:</label>
-                            <input type="text" class="form-control form-control-lg input-qr text-center" id="qr_hash" name="qr_hash" placeholder="Aguardando leitura..." required autofocus>
+                        <div id="checkin-result-success" class="alert alert-success d-flex align-items-center d-none" role="alert">
+                            <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                            <div class="text-start">
+                                <strong class="d-block" id="success-title">Check-in Realizado!</strong>
+                                <small id="success-msg">Jogador liberado.</small>
+                            </div>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold">
-                                VALIDAR ENTRADA <i class="bi bi-arrow-right"></i>
-                            </button>
+
+                        <div id="checkin-result-error" class="alert alert-danger d-flex align-items-center d-none" role="alert">
+                            <i class="bi bi-x-circle-fill fs-4 me-3"></i>
+                            <div class="text-start">
+                                <strong class="d-block" id="error-title">Erro na Validação</strong>
+                                <small id="error-msg">QR Code inválido.</small>
+                            </div>
                         </div>
-                    </form>
-                    <p class="text-center small text-muted mt-3">Mantenha esta tela aberta no celular da portaria.</p>
-                <?php endif; ?>
+
+                    </div>
+                </div>
+
+                <div class="card bg-dark border-secondary text-white shadow-sm">
+                    <div class="card-header border-secondary fw-bold">
+                        <i class="bi bi-keyboard me-2"></i> Validação Manual
+                    </div>
+                    <div class="card-body">
+                        <div class="input-group">
+                            <input type="text" id="manual-hash-input" class="form-control bg-dark text-white border-secondary" placeholder="Digite o hash do código...">
+                            <button class="btn btn-warning fw-bold" type="button" id="btn-manual-checkin">VALIDAR</button>
+                        </div>
+                        <small class="text-muted mt-2 d-block">Use apenas se o scanner falhar.</small>
+                    </div>
+                </div>
 
             </div>
         </div>
     </div>
+
+    <script>
+        window.LFE_CONFIG = {
+            API_URL: '<?php echo API_URL; ?>'
+        };
+    </script>
+
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="<?php echo BASE_URL; ?>/painel/js/staff_checkin.js?v=<?php echo time(); ?>"></script>
+
 </body>
 
 </html>
