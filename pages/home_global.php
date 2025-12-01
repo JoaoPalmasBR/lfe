@@ -1,14 +1,25 @@
 <?php
 // Arquivo: pages/home_global.php
-// Objetivo: Página inicial pública e global da plataforma.
+// Objetivo: Página inicial pública global com menu de estados.
+// VERSÃO: CORRIGIDA (Consumindo API em vez de DB direto)
 
 require_once ROOT_PATH . '/includes/functions.php';
 
-// Verifica se tem usuário logado (para ajustar botões do banner)
-$usuarioLogadoHome = null;
-if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
-    // Uma verificação rápida, não precisa ser super segura aqui, é só visual
-    $usuarioLogadoHome = true;
+// 1. Verifica login (visual)
+$usuarioLogadoHome = isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token']);
+
+// 2. Busca lista de estados para o menu dropdown VIA API
+$listaEstadosMenu = [];
+try {
+    // Usa a função auxiliar do frontend para chamar a API
+    $apiResult = callAPI('GET', '/public/estados.php');
+
+    if (isset($apiResult['status']) && $apiResult['status'] === 'success') {
+        $listaEstadosMenu = $apiResult['data'];
+    }
+} catch (Exception $e) {
+    // Silencia erro se a API falhar, para não quebrar a home inteira
+    error_log("Erro ao chamar API de estados no front: " . $e->getMessage());
 }
 ?>
 <!DOCTYPE html>
@@ -25,9 +36,7 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
     <style>
         :root {
             --primary-color: #0d6efd;
-            /* Azul vibrante */
             --secondary-color: #6f42c1;
-            /* Roxo */
             --bg-dark: #0a0a0a;
             --bg-card: #141414;
             --text-light: #e0e0e0;
@@ -45,17 +54,28 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             letter-spacing: 1px;
         }
 
-        /* Navbar transparente que fica sólida ao rolar */
         .navbar-home {
-            background: rgba(0, 0, 0, 0.5) !important;
+            background: rgba(0, 0, 0, 0.8) !important;
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            transition: background 0.3s;
         }
 
-        /* Hero Section */
+        /* Estilo para o Dropdown escuro */
+        .dropdown-menu-dark-custom {
+            background-color: rgba(20, 20, 20, 0.95);
+            border: 1px solid #333;
+        }
+
+        .dropdown-menu-dark-custom .dropdown-item {
+            color: var(--text-light);
+        }
+
+        .dropdown-menu-dark-custom .dropdown-item:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
         .hero-section {
-            /* Use uma imagem de fundo de e-sports impactante aqui */
             background: linear-gradient(rgba(0, 0, 0, 0.6), var(--bg-dark)), url('https://placehold.co/1920x800/1a1a1a/FFF?text=E-Sports+Arena+Background');
             background-size: cover;
             background-position: center;
@@ -71,7 +91,6 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             -webkit-text-fill-color: transparent;
         }
 
-        /* Stats Banner */
         .stats-banner {
             background: var(--bg-card);
             padding: 2rem 0;
@@ -84,7 +103,6 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             line-height: 1;
         }
 
-        /* Section Titles */
         .section-title {
             position: relative;
             padding-bottom: 1rem;
@@ -102,7 +120,6 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             background: var(--primary-color);
         }
 
-        /* Cards de Torneio (Adaptação para dark mode) */
         .card-camp-home {
             background: var(--bg-card);
             border: 1px solid #222;
@@ -115,7 +132,6 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             box-shadow: 0 5px 15px rgba(13, 110, 253, 0.2);
         }
 
-        /* Tabela de Ranking Dark */
         .table-dark-custom {
             --bs-table-bg: var(--bg-card);
             --bs-table-border-color: #333;
@@ -139,6 +155,22 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
+
+                    <?php if (!empty($listaEstadosMenu)): ?>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownEstados" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Estados
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-dark-custom" aria-labelledby="navbarDropdownEstados">
+                                <?php foreach ($listaEstadosMenu as $est): ?>
+                                    <li><a class="dropdown-item font-impact ls-1" href="/<?php echo strtolower($est['sigla']); ?>">
+                                            <?php echo htmlspecialchars($est['nome']); ?>
+                                        </a></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </li>
+                    <?php endif; ?>
+
                     <li class="nav-item"><a class="nav-link" href="/campeonatos">Torneios</a></li>
                     <li class="nav-item"><a class="nav-link" href="/ranking">Ranking</a></li>
                     <li class="nav-item ms-lg-3">
@@ -160,13 +192,9 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
                     <h1 class="hero-title font-impact mb-3">Sua Jornada Competitiva Começa Aqui.</h1>
                     <p class="lead mb-5 opacity-75 fs-4">Participe dos melhores torneios de e-sports do Brasil, suba no ranking e construa seu legado.</p>
                     <div class="d-flex gap-3 justify-content-center justify-content-lg-start">
-                        <a href="/campeonatos" class="btn btn-primary btn-lg fw-bold px-5 py-3">
-                            <i class="bi bi-trophy-fill me-2"></i> Ver Torneios
-                        </a>
+                        <a href="/campeonatos" class="btn btn-primary btn-lg fw-bold px-5 py-3"><i class="bi bi-trophy-fill me-2"></i> Ver Torneios</a>
                         <?php if (!$usuarioLogadoHome): ?>
-                            <a href="/cadastro" class="btn btn-outline-light btn-lg fw-bold px-5 py-3">
-                                Crie sua Conta
-                            </a>
+                            <a href="/cadastro" class="btn btn-outline-light btn-lg fw-bold px-5 py-3">Crie sua Conta</a>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -196,24 +224,17 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
     <section class="py-5">
         <div class="container py-4">
             <h2 class="text-center font-impact section-title display-5">Próximos Torneios</h2>
-
             <div id="featured-tournaments-loader" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status"></div>
             </div>
-
-            <div class="row g-4 justify-content-center" id="featured-tournaments-container">
-            </div>
-
-            <div class="text-center mt-5">
-                <a href="/campeonatos" class="btn btn-outline-primary fw-bold px-5">Ver Todos os Torneios</a>
-            </div>
+            <div class="row g-4 justify-content-center" id="featured-tournaments-container"></div>
+            <div class="text-center mt-5"><a href="/campeonatos" class="btn btn-outline-primary fw-bold px-5">Ver Todos os Torneios</a></div>
         </div>
     </section>
 
     <section class="py-5 bg-card-dark" style="background: #0f0f0f;">
         <div class="container py-4">
             <h2 class="text-center font-impact section-title display-5">Top 5 Brasil</h2>
-
             <div class="row justify-content-center">
                 <div class="col-lg-8">
                     <div class="card card-camp-home border-0 shadow-lg">
@@ -231,15 +252,12 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
                                             <th class="text-end pe-4">Pontos</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="ranking-tbody">
-                                    </tbody>
+                                    <tbody id="ranking-tbody"></tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                    <div class="text-center mt-4">
-                        <a href="/ranking" class="btn btn-link text-decoration-none text-primary fw-bold">Ver Ranking Completo <i class="bi bi-arrow-right"></i></a>
-                    </div>
+                    <div class="text-center mt-4"><a href="/ranking" class="btn btn-link text-decoration-none text-primary fw-bold">Ver Ranking Completo <i class="bi bi-arrow-right"></i></a></div>
                 </div>
             </div>
         </div>
@@ -251,7 +269,6 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             <p>A plataforma definitiva para e-sports regionais.</p>
         </div>
     </footer>
-
 
     <script>
         window.LFE_CONFIG = {
@@ -265,20 +282,15 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             loadFeaturedTournaments();
             loadTopRanking();
         });
-
-        // 1. Busca Torneios em Destaque
         async function loadFeaturedTournaments() {
             const container = document.getElementById('featured-tournaments-container');
             const loader = document.getElementById('featured-tournaments-loader');
-
             try {
-                // Chama a API existente, limitando a 3 resultados
                 const response = await fetch(`${window.LFE_CONFIG.API_URL}/public/campeonatos.php?limite=3`);
                 const result = await response.json();
-
                 if (response.ok && result.status === 'success' && result.data.length > 0) {
                     loader.classList.add('d-none');
-                    result.data.slice(0, 3).forEach(camp => { // Garante max 3
+                    result.data.slice(0, 3).forEach(camp => {
                         container.innerHTML += buildTournamentCard(camp);
                     });
                 } else {
@@ -288,36 +300,18 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
                 loader.innerHTML = '<p class="text-muted">Nenhum torneio em destaque no momento.</p>';
             }
         }
-
-        // 2. Busca Top Ranking Global
         async function loadTopRanking() {
             const table = document.getElementById('ranking-table');
             const tbody = document.getElementById('ranking-tbody');
             const loader = document.getElementById('ranking-loader');
-
             try {
-                // Chama a API existente, limitando a 5 resultados
                 const response = await fetch(`${window.LFE_CONFIG.API_URL}/public/ranking.php?limite=5`);
                 const result = await response.json();
-
                 if (response.ok && result.status === 'success' && result.data.ranking.length > 0) {
                     loader.classList.add('d-none');
                     table.classList.remove('d-none');
-
                     result.data.ranking.forEach(player => {
-                        tbody.innerHTML += `
-                        <tr>
-                            <td class="ps-4 fw-bold ${player.posicao === 1 ? 'rank-pos-1 fs-5' : ''}">#${player.posicao}</td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <img src="${player.avatar_url}" class="rounded-circle me-2" width="30" height="30">
-                                    <span class="fw-bold">${player.nome_exibicao}</span>
-                                </div>
-                            </td>
-                            <td class="text-center"><small class="badge bg-dark border">${player.estado_sigla}</small></td>
-                            <td class="text-end pe-4 fw-bold text-primary">${player.pontuacao_total}</td>
-                        </tr>
-                    `;
+                        tbody.innerHTML += `<tr><td class="ps-4 fw-bold ${player.posicao === 1 ? 'rank-pos-1 fs-5' : ''}">#${player.posicao}</td><td><div class="d-flex align-items-center"><img src="${player.avatar_url}" class="rounded-circle me-2" width="30" height="30"><span class="fw-bold">${player.nome_exibicao}</span></div></td><td class="text-center"><small class="badge bg-dark border">${player.estado_sigla}</small></td><td class="text-end pe-4 fw-bold text-primary">${player.pontuacao_total}</td></tr>`;
                     });
                 } else {
                     throw new Error('Ranking vazio.');
@@ -327,30 +321,56 @@ if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
             }
         }
 
-        // Helper: Monta o HTML do card de torneio (versão dark)
+        // Substitua a função buildTournamentCard existente por esta VERSÃO ATUALIZADA
         function buildTournamentCard(camp) {
-            // Formata data
             const dataInicio = new Date(camp.data_inicio_prevista).toLocaleDateString('pt-BR');
             const valor = camp.valor_inscricao > 0 ? `R$ ${parseFloat(camp.valor_inscricao).toFixed(2).replace('.', ',')}` : 'Grátis';
 
+            // --- LÓGICA DOS BOTÕES (Nova) ---
+            let buttonsHtml = '';
+
+            // Botão de Inscrição/Detalhes (Se inscrições estiverem abertas)
+            if (camp.status === 'inscricoes_abertas') {
+                // Se estiver na home do estado (currentSlug existe), usa o link do estado, senão o global
+                const baseLink = (typeof currentSlug !== 'undefined' && currentSlug) ? `/${currentSlug}/campeonatos` : '/campeonatos';
+                buttonsHtml += `<a href="${baseLink}" class="btn btn-primary fw-bold w-100 mb-2">Ver Detalhes / Inscrever</a>`;
+            }
+
+            // NOVO: Botão Ver Chaves (Aparece se o torneio NÃO estiver apenas "criado" ou "inscricoes_abertas")
+            // Ou seja, aparece para 'checkin_aberto', 'em_andamento', 'finalizado'
+            if (camp.status !== 'criado' && camp.status !== 'inscricoes_abertas') {
+                // Usa o estilo outline-light para destacar menos que o botão de inscrição se ambos existirem
+                const btnClass = (buttonsHtml !== '') ? 'btn-outline-light' : 'btn-primary';
+                buttonsHtml += `<a href="/pages/chaves.php?id=${camp.id}" class="btn ${btnClass} fw-bold w-100"><i class="bi bi-diagram-3 me-2"></i> Ver Chaves</a>`;
+            }
+
+            // Se não tiver nenhum botão (ex: torneio recém-criado), põe um aviso
+            if (buttonsHtml === '') {
+                buttonsHtml = '<button class="btn btn-secondary w-100" disabled>Aguardando Início</button>';
+            }
+            // --------------------------------
+
             return `
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 card-camp-home text-white">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="badge bg-primary">${camp.jogo}</span>
-                            <span class="badge bg-dark border"><i class="bi bi-geo-alt"></i> ${camp.sigla_estado}</span>
-                        </div>
-                        <h4 class="card-title font-impact mb-3 text-truncate">${camp.nome}</h4>
-                        <ul class="list-unstyled small text-muted mb-4">
-                             <li class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> Início: <strong>${dataInicio}</strong></li>
-                             <li class="mb-2"><i class="bi bi-ticket-perforated me-2 text-primary"></i> Inscrição: <strong>${valor}</strong></li>
-                        </ul>
-                         <a href="/campeonatos" class="btn btn-primary fw-bold w-100">Ver Detalhes</a>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 card-camp-home text-white">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="badge bg-primary">${camp.jogo}</span>
+                        <span class="badge bg-dark border"><i class="bi bi-geo-alt"></i> ${camp.sigla_estado || ''}</span>
+                    </div>
+                    <h4 class="card-title font-impact mb-3 text-truncate">${camp.nome}</h4>
+                    <ul class="list-unstyled small text-muted mb-4 flex-grow-1">
+                            <li class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> Início: <strong>${dataInicio}</strong></li>
+                            <li class="mb-2"><i class="bi bi-ticket-perforated me-2 text-primary"></i> Inscrição: <strong>${valor}</strong></li>
+                            <li class="mb-2 text-capitalize"><i class="bi bi-info-circle me-2 text-primary"></i> Status: <strong>${camp.status.replace('_', ' ')}</strong></li>
+                    </ul>
+                    <div class="mt-auto">
+                        ${buttonsHtml}
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
         }
     </script>
 </body>

@@ -290,28 +290,56 @@ $usuarioLogadoHome = isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'
             }
         }
 
-        // Helper: Monta o card (igual ao global, mas o link leva para a área do estado)
+        // Substitua a função buildTournamentCard existente por esta VERSÃO ATUALIZADA
         function buildTournamentCard(camp) {
             const dataInicio = new Date(camp.data_inicio_prevista).toLocaleDateString('pt-BR');
             const valor = camp.valor_inscricao > 0 ? `R$ ${parseFloat(camp.valor_inscricao).toFixed(2).replace('.', ',')}` : 'Grátis';
 
+            // --- LÓGICA DOS BOTÕES (Nova) ---
+            let buttonsHtml = '';
+
+            // Botão de Inscrição/Detalhes (Se inscrições estiverem abertas)
+            if (camp.status === 'inscricoes_abertas') {
+                // Se estiver na home do estado (currentSlug existe), usa o link do estado, senão o global
+                const baseLink = (typeof currentSlug !== 'undefined' && currentSlug) ? `/${currentSlug}/campeonatos` : '/campeonatos';
+                buttonsHtml += `<a href="${baseLink}" class="btn btn-primary fw-bold w-100 mb-2">Ver Detalhes / Inscrever</a>`;
+            }
+
+            // NOVO: Botão Ver Chaves (Aparece se o torneio NÃO estiver apenas "criado" ou "inscricoes_abertas")
+            // Ou seja, aparece para 'checkin_aberto', 'em_andamento', 'finalizado'
+            if (camp.status !== 'criado' && camp.status !== 'inscricoes_abertas') {
+                // Usa o estilo outline-light para destacar menos que o botão de inscrição se ambos existirem
+                const btnClass = (buttonsHtml !== '') ? 'btn-outline-light' : 'btn-primary';
+                buttonsHtml += `<a href="/pages/chaves.php?id=${camp.id}" class="btn ${btnClass} fw-bold w-100"><i class="bi bi-diagram-3 me-2"></i> Ver Chaves</a>`;
+            }
+
+            // Se não tiver nenhum botão (ex: torneio recém-criado), põe um aviso
+            if (buttonsHtml === '') {
+                buttonsHtml = '<button class="btn btn-secondary w-100" disabled>Aguardando Início</button>';
+            }
+            // --------------------------------
+
             return `
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100 card-camp-home text-white">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between mb-3">
-                            <span class="badge bg-primary">${camp.jogo}</span>
-                            </div>
-                        <h4 class="card-title font-impact mb-3 text-truncate">${camp.nome}</h4>
-                        <ul class="list-unstyled small text-muted mb-4">
-                             <li class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> Início: <strong>${dataInicio}</strong></li>
-                             <li class="mb-2"><i class="bi bi-ticket-perforated me-2 text-primary"></i> Inscrição: <strong>${valor}</strong></li>
-                        </ul>
-                         <a href="/${currentSlug}/campeonatos" class="btn btn-primary fw-bold w-100">Ver Detalhes</a>
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 card-camp-home text-white">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="badge bg-primary">${camp.jogo}</span>
+                        <span class="badge bg-dark border"><i class="bi bi-geo-alt"></i> ${camp.sigla_estado || ''}</span>
+                    </div>
+                    <h4 class="card-title font-impact mb-3 text-truncate">${camp.nome}</h4>
+                    <ul class="list-unstyled small text-muted mb-4 flex-grow-1">
+                            <li class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> Início: <strong>${dataInicio}</strong></li>
+                            <li class="mb-2"><i class="bi bi-ticket-perforated me-2 text-primary"></i> Inscrição: <strong>${valor}</strong></li>
+                            <li class="mb-2 text-capitalize"><i class="bi bi-info-circle me-2 text-primary"></i> Status: <strong>${camp.status.replace('_', ' ')}</strong></li>
+                    </ul>
+                    <div class="mt-auto">
+                        ${buttonsHtml}
                     </div>
                 </div>
             </div>
-        `;
+        </div>
+    `;
         }
     </script>
 </body>
