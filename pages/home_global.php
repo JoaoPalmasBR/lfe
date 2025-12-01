@@ -1,86 +1,358 @@
 <?php
-// --- Configurações PHP ---
-// Aqui definimos variáveis básicas para usar no HTML abaixo
-$pageTitle = "Em Breve";
-$leagueName = "Liga Tocantinense de Futebol Eletrônico";
-$leagueAcronym = "LTFE";
-$currentYear = date("Y");
-?>
+// Arquivo: pages/home_global.php
+// Objetivo: Página inicial pública e global da plataforma.
 
+require_once ROOT_PATH . '/includes/functions.php';
+
+// Verifica se tem usuário logado (para ajustar botões do banner)
+$usuarioLogadoHome = null;
+if (isset($_COOKIE['lfe_token']) && !empty($_COOKIE['lfe_token'])) {
+    // Uma verificação rápida, não precisa ser super segura aqui, é só visual
+    $usuarioLogadoHome = true;
+}
+?>
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" class="h-100">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title><?php echo $pageTitle; ?> | <?php echo $leagueAcronym; ?></title>
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <title>LFE Arena - Sua Plataforma de Competição</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* Garante que o corpo da página ocupe pelo menos 100% da altura da tela */
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            background-color: #ffffff;
-            /* Fundo branco para combinar com o logo */
+        :root {
+            --primary-color: #0d6efd;
+            /* Azul vibrante */
+            --secondary-color: #6f42c1;
+            /* Roxo */
+            --bg-dark: #0a0a0a;
+            --bg-card: #141414;
+            --text-light: #e0e0e0;
         }
 
-        /* * 'flex: 1' faz a tag <main> crescer para ocupar todo o espaço disponível entre o topo e o rodapé.
-         * 'display: flex' e 'align-items: center' centralizam o conteúdo verticalmente dentro do main.
-        */
-        main {
-            flex: 1;
-            display: flex;
-            align-items: center;
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .font-impact {
+            font-family: 'Teko', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Navbar transparente que fica sólida ao rolar */
+        .navbar-home {
+            background: rgba(0, 0, 0, 0.5) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.3s;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            /* Use uma imagem de fundo de e-sports impactante aqui */
+            background: linear-gradient(rgba(0, 0, 0, 0.6), var(--bg-dark)), url('https://placehold.co/1920x800/1a1a1a/FFF?text=E-Sports+Arena+Background');
+            background-size: cover;
+            background-position: center;
+            padding: 150px 0 100px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        .hero-title {
+            font-size: 4.5rem;
+            line-height: 1;
+            background: linear-gradient(45deg, #fff, var(--primary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Stats Banner */
+        .stats-banner {
+            background: var(--bg-card);
+            padding: 2rem 0;
+            border-bottom: 1px solid #222;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            line-height: 1;
+        }
+
+        /* Section Titles */
+        .section-title {
+            position: relative;
+            padding-bottom: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: var(--primary-color);
+        }
+
+        /* Cards de Torneio (Adaptação para dark mode) */
+        .card-camp-home {
+            background: var(--bg-card);
+            border: 1px solid #222;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+
+        .card-camp-home:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary-color);
+            box-shadow: 0 5px 15px rgba(13, 110, 253, 0.2);
+        }
+
+        /* Tabela de Ranking Dark */
+        .table-dark-custom {
+            --bs-table-bg: var(--bg-card);
+            --bs-table-border-color: #333;
+            color: var(--text-light);
+        }
+
+        .rank-pos-1 {
+            color: #FFD700;
         }
     </style>
 </head>
 
-<body>
+<body class="d-flex flex-column h-100">
 
-    <nav class="navbar navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top navbar-home">
         <div class="container">
-            <a class="navbar-brand fw-bold text-primary" href="#">
-                <?php echo $leagueAcronym; ?>
-            </a>
+            <a class="navbar-brand font-impact fs-3" href="/"><i class="bi bi-controller me-2 text-primary"></i> LFE Arena</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/campeonatos">Torneios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/ranking">Ranking</a></li>
+                    <li class="nav-item ms-lg-3">
+                        <?php if ($usuarioLogadoHome): ?>
+                            <a href="/painel" class="btn btn-primary fw-bold btn-sm px-4">Meu Painel</a>
+                        <?php else: ?>
+                            <a href="/login" class="btn btn-outline-light fw-bold btn-sm px-4">Login / Cadastro</a>
+                        <?php endif; ?>
+                    </li>
+                </ul>
+            </div>
         </div>
     </nav>
 
-    <main>
-        <div class="container text-center px-4 py-5">
+    <header class="hero-section text-center text-lg-start">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h1 class="hero-title font-impact mb-3">Sua Jornada Competitiva Começa Aqui.</h1>
+                    <p class="lead mb-5 opacity-75 fs-4">Participe dos melhores torneios de e-sports do Brasil, suba no ranking e construa seu legado.</p>
+                    <div class="d-flex gap-3 justify-content-center justify-content-lg-start">
+                        <a href="/campeonatos" class="btn btn-primary btn-lg fw-bold px-5 py-3">
+                            <i class="bi bi-trophy-fill me-2"></i> Ver Torneios
+                        </a>
+                        <?php if (!$usuarioLogadoHome): ?>
+                            <a href="/cadastro" class="btn btn-outline-light btn-lg fw-bold px-5 py-3">
+                                Crie sua Conta
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-            <img src="logo-ltfe.png" alt="Logo da LTFE" width="220" class="img-fluid mb-4">
+    <section class="stats-banner font-impact">
+        <div class="container">
+            <div class="row text-center g-4">
+                <div class="col-md-4">
+                    <div class="stat-number">+1.500</div>
+                    <div class="text-uppercase ls-1 text-muted">Jogadores Registrados</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-number">+50</div>
+                    <div class="text-uppercase ls-1 text-muted">Torneios Realizados</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-number">R$ 10K+</div>
+                    <div class="text-uppercase ls-1 text-muted">Em Premiações</div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            <h1 class="display-5 fw-bold mb-3 text-dark">
-                <?php echo $leagueName; ?>
-            </h1>
+    <section class="py-5">
+        <div class="container py-4">
+            <h2 class="text-center font-impact section-title display-5">Próximos Torneios</h2>
 
-            <p class="lead text-muted mb-5">
-                Estamos preparando o campo. A maior competição oficial de e-sports do Tocantins começa em breve.
-            </p>
-
-            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-                <a href="#" class="btn btn-primary btn-lg px-5 gap-3 fw-bold rounded-pill">
-                    Seja Notificado do Lançamento
-                </a>
+            <div id="featured-tournaments-loader" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
             </div>
 
-        </div>
-    </main>
+            <div class="row g-4 justify-content-center" id="featured-tournaments-container">
+            </div>
 
-    <footer class="footer mt-auto py-3 bg-light text-center">
+            <div class="text-center mt-5">
+                <a href="/campeonatos" class="btn btn-outline-primary fw-bold px-5">Ver Todos os Torneios</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-card-dark" style="background: #0f0f0f;">
+        <div class="container py-4">
+            <h2 class="text-center font-impact section-title display-5">Top 5 Brasil</h2>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card card-camp-home border-0 shadow-lg">
+                        <div class="card-body p-0">
+                            <div id="ranking-loader" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status"></div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-dark table-hover table-dark-custom align-middle mb-0 d-none" id="ranking-table">
+                                    <thead>
+                                        <tr class="text-uppercase small text-muted">
+                                            <th class="ps-4 py-3">Pos</th>
+                                            <th>Jogador</th>
+                                            <th class="text-center">Estado</th>
+                                            <th class="text-end pe-4">Pontos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ranking-tbody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4">
+                        <a href="/ranking" class="btn btn-link text-decoration-none text-primary fw-bold">Ver Ranking Completo <i class="bi bi-arrow-right"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-black py-4 mt-auto border-top border-dark text-center text-muted small">
         <div class="container">
-            <span class="text-muted small">
-                &copy; <?php echo $currentYear; ?> <?php echo $leagueName; ?>.
-            </span>
+            <p class="mb-1 font-impact fs-5 text-white">LFE Arena &copy; <?php echo date('Y'); ?></p>
+            <p>A plataforma definitiva para e-sports regionais.</p>
         </div>
     </footer>
 
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script>
+        window.LFE_CONFIG = {
+            API_URL: '<?php echo API_URL; ?>'
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFeaturedTournaments();
+            loadTopRanking();
+        });
+
+        // 1. Busca Torneios em Destaque
+        async function loadFeaturedTournaments() {
+            const container = document.getElementById('featured-tournaments-container');
+            const loader = document.getElementById('featured-tournaments-loader');
+
+            try {
+                // Chama a API existente, limitando a 3 resultados
+                const response = await fetch(`${window.LFE_CONFIG.API_URL}/public/campeonatos.php?limite=3`);
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success' && result.data.length > 0) {
+                    loader.classList.add('d-none');
+                    result.data.slice(0, 3).forEach(camp => { // Garante max 3
+                        container.innerHTML += buildTournamentCard(camp);
+                    });
+                } else {
+                    throw new Error('Nenhum torneio encontrado.');
+                }
+            } catch (error) {
+                loader.innerHTML = '<p class="text-muted">Nenhum torneio em destaque no momento.</p>';
+            }
+        }
+
+        // 2. Busca Top Ranking Global
+        async function loadTopRanking() {
+            const table = document.getElementById('ranking-table');
+            const tbody = document.getElementById('ranking-tbody');
+            const loader = document.getElementById('ranking-loader');
+
+            try {
+                // Chama a API existente, limitando a 5 resultados
+                const response = await fetch(`${window.LFE_CONFIG.API_URL}/public/ranking.php?limite=5`);
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success' && result.data.ranking.length > 0) {
+                    loader.classList.add('d-none');
+                    table.classList.remove('d-none');
+
+                    result.data.ranking.forEach(player => {
+                        tbody.innerHTML += `
+                        <tr>
+                            <td class="ps-4 fw-bold ${player.posicao === 1 ? 'rank-pos-1 fs-5' : ''}">#${player.posicao}</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <img src="${player.avatar_url}" class="rounded-circle me-2" width="30" height="30">
+                                    <span class="fw-bold">${player.nome_exibicao}</span>
+                                </div>
+                            </td>
+                            <td class="text-center"><small class="badge bg-dark border">${player.estado_sigla}</small></td>
+                            <td class="text-end pe-4 fw-bold text-primary">${player.pontuacao_total}</td>
+                        </tr>
+                    `;
+                    });
+                } else {
+                    throw new Error('Ranking vazio.');
+                }
+            } catch (error) {
+                loader.innerHTML = '<p class="text-muted py-3">Ranking ainda não disponível.</p>';
+            }
+        }
+
+        // Helper: Monta o HTML do card de torneio (versão dark)
+        function buildTournamentCard(camp) {
+            // Formata data
+            const dataInicio = new Date(camp.data_inicio_prevista).toLocaleDateString('pt-BR');
+            const valor = camp.valor_inscricao > 0 ? `R$ ${parseFloat(camp.valor_inscricao).toFixed(2).replace('.', ',')}` : 'Grátis';
+
+            return `
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 card-camp-home text-white">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="badge bg-primary">${camp.jogo}</span>
+                            <span class="badge bg-dark border"><i class="bi bi-geo-alt"></i> ${camp.sigla_estado}</span>
+                        </div>
+                        <h4 class="card-title font-impact mb-3 text-truncate">${camp.nome}</h4>
+                        <ul class="list-unstyled small text-muted mb-4">
+                             <li class="mb-2"><i class="bi bi-calendar-event me-2 text-primary"></i> Início: <strong>${dataInicio}</strong></li>
+                             <li class="mb-2"><i class="bi bi-ticket-perforated me-2 text-primary"></i> Inscrição: <strong>${valor}</strong></li>
+                        </ul>
+                         <a href="/campeonatos" class="btn btn-primary fw-bold w-100">Ver Detalhes</a>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
+    </script>
 </body>
 
 </html>

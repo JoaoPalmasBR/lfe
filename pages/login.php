@@ -1,10 +1,36 @@
 <?php
 // Arquivo: pages/login.php
 // Objetivo: Exibir formulário de login e processar a autenticação via API.
+// =====================================================================
+// 1. CARREGAMENTO ESSENCIAL (CORREÇÃO)
+// =====================================================================
+// Precisamos carregar as configurações ANTES de tentar usar BASE_URL ou ROOT_PATH.
+// Usamos __DIR__ para voltar um nível e achar o config na raiz.
+if (file_exists(__DIR__ . '/../config_front.php')) {
+    require_once __DIR__ . '/../config_front.php';
+} else {
+    // Fallback de segurança caso a estrutura de pastas seja diferente
+    die("Erro crítico: Arquivo de configuração não encontrado.");
+}
 
 // Carrega as funções auxiliares
 require_once ROOT_PATH . '/includes/functions.php';
 
+// =====================================================================
+// 2. LÓGICA DE LOGOUT
+// =====================================================================
+// Verifica se o usuário clicou no botão "Sair" (que leva para ?logout=true)
+if (isset($_GET['logout']) && $_GET['logout'] === 'true') {
+    // Para "deletar" um cookie, nós o redefinimos com uma data de validade no passado.
+    // Importante: O caminho '/' deve ser o mesmo usado quando o cookie foi criado.
+    setcookie('lfe_token', '', time() - 3600, '/');
+
+    // Após destruir o cookie, redirecionamos para a própria página de login limpa
+    // Agora é seguro usar BASE_URL aqui.
+    header("Location: " . BASE_URL . "/login?msg=logged_out");
+    exit; // Interrompe o script aqui para não carregar o resto da página
+}
+// ===============================
 $erroLogin = null;
 $emailInformado = '';
 
