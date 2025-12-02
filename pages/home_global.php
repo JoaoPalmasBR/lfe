@@ -76,7 +76,7 @@ try {
         }
 
         .hero-section {
-            background: linear-gradient(rgba(0, 0, 0, 0.6), var(--bg-dark)), url('https://placehold.co/1920x800/1a1a1a/FFF?text=E-Sports+Arena+Background');
+            background: linear-gradient(rgba(0, 0, 0, 0.6), var(--bg-dark)), url('../background-lfe.jpg');
             background-size: cover;
             background-position: center;
             padding: 150px 0 100px;
