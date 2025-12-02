@@ -17,7 +17,7 @@ function showError(msg) {
 
 function fetchBracketData(campId) {
     // NOTA: Usando o caminho corrigido /public/
-    fetch(`${API_BASE_URL}/public/chaves.php?campeonato_id=${campId}`)
+    fetch(`${API_BASE_URL}/public/chaves.php?id=${campId}`)
         .then(r => r.json())
         .then(result => {
             document.getElementById('bracket-loader').classList.add('d-none');
